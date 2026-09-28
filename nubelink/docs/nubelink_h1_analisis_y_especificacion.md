@@ -14,7 +14,7 @@ Fecha: 2026-09-28 · Estado: concepto de ingeniería para banco de pruebas (no v
 4. **Modo manual:** funciona porque, sin energía, ambas cámaras del pistón quedan a tanque y la válvula de descarga (dump) elimina la contrapresión. El operador mueve la palanca arrastrando un pistón libre. Ese es el requisito de diseño n.º 1 del H1 (fricción de sellos baja).
 5. **Fabricación:** cuerpo cilíndrico Ø70 × 110 mm en acero C45, camisa Ø32 bruñida, tapas roscadas, vástago pasante Ø16 cromado, puertos G1/4 → **1 206 N a 20 bar / 1 508 N a 25 bar (paridad con el MOD10: 1 300 N)**. Todo torno + taladro. El bloque de válvulas (2 cavidades FC08-3 por función, galerías P/T, salidas A/B) sí es trabajo para la CNC 6090 en aluminio. Galerías cruzadas se cierran con **tapones roscados con sello** o **tapones expansores**, nunca con soldadura ni pernos comunes.
 6. **Seguridad:** la cadena de parada (paro de emergencia, pérdida de enlace) debe cortar por **hardware** la válvula de descarga y las bobinas, independiente del microcontrolador. La práctica del sector para radiocontroles de grúa es **PL d / Categoría 3 (ISO 13849-1)** para la función de parada, y EN 12999 es la norma de referencia de la grúa.
-7. **Lo que dice la simulación (carpeta `sim/`):** el control "presión ∝ corriente" sin sensor **no sirve** con este pistón: satura a 0,3 A y la histéresis es la mitad de la carrera, porque el resorte del carrete es blando frente a la fricción. Con **sensor de posición y lazo PI** posiciona a ≈ ±0,5 mm en < 100 ms. Y para volver a neutro hacen falta dos cosas: la secuencia **"retorno activo a neutro → dump 0,5 s después"** (el dump retardado del MOD10) y un **paquete de resorte de centrado propio** (≈ 60 N + 2 N/mm) para el caso sin energía. Todo esto ya está en el CAD y en el modelo.
+7. **Lo que dice la simulación (carpeta `sim/`):** el control "presión ∝ PWM" sin sensor **no sirve** con este pistón: satura a 0,3 A y la histéresis es 30–50 % de la carrera, porque el resorte es blando frente a la fricción. Con **sensor de posición y lazo PI** el recorrido es proporcional a la señal PWM del joystick (desvío < 2 mm). El **resorte de centrado propio** (50 N + 2,5 N/mm, obligatorio como en todo distribuidor) garantiza el neutro sin energía, y con energía la secuencia **"retorno activo → dump 0,5 s después"** lo hace más rápido y lo verifica. Todo esto ya está en el CAD y en el modelo.
 8. **Dinero:** el kit Scanreco RC400 + MOD10 de 4 funciones se vende en ~USD 6 300 (incluye la radio). Tu versión, usando tu propia radio, tiene un costo hidráulico estimado de USD 2 000–3 500 por grúa de 4 funciones (válvulas importadas + bloque local). El margen será menor que el 5× de tu negocio actual, pero abre el mercado de grúas manuales que hoy no puedes atender y el mismo bloque sirve para otras máquinas (perforadoras, forestales, agrícolas).
 
 ---
@@ -170,7 +170,7 @@ Modelo 3D paramétrico: [`../cad/nubelink_h1.py`](../cad/nubelink_h1.py) · STEP
 | Montaje | Cara plana inferior 100 × 36 mm con **4 × M8** (80 × 24 mm) | O abrazaderas partidas sobre el Ø70 (hechas en la 6090) |
 | Horquilla | Clevis 34 × 20 × 24 mm, ranura 10 mm, perno Ø10, roscada M12 al vástago | Se adapta a cada varilla de grúa; MOD10 usa el mismo esquema horquilla + abrazadera en la varilla |
 | Sensor | Imán en disco Ø24 en el extremo trasero + sensor Hall lineal fijo al cuerpo; o potenciómetro lineal 0–50 mm | Salida 0–5 V / 0,5–4,5 V al receptor |
-| Resorte de centrado propio | Paquete tipo carrete en el extremo trasero: caja Ø44 × 48 mm con dos paredes (aberturas Ø30), dos arandelas Ø34, resorte precargado **≈ 60 N + 2 N/mm**, collar en el vástago y tuerca | Garantiza el retorno a neutro sin energía aunque el distribuidor tenga resorte débil o el carrete esté sucio (simulación S6). Cuesta ≈ 100 N más en la horquilla a fin de carrera en modo manual |
+| Resorte de centrado propio (**obligatorio**) | Paquete tipo carrete en el extremo trasero: caja Ø44 × 48 mm con dos paredes (aberturas Ø30), dos arandelas Ø34, resorte de matricería precargado **50 N + 2,5 N/mm** (100 N a fin de carrera), collar en el vástago y tuerca | Como en todo distribuidor: devuelve el pistón a neutro sin energía aunque el distribuidor tenga resorte débil o el carrete esté sucio (simulación S6). Cuesta ≈ 35 N más en la empuñadura a fin de carrera en modo manual |
 | Masa estimada | ≈ 3,8 kg con vástago, horquilla y paquete de resorte (acero); ≈ 2,0 kg en aluminio | |
 
 ### 5.2 Tolerancias y acabados críticos
@@ -240,11 +240,11 @@ Por función se necesitan **dos salidas en corriente** (no en tensión: la resis
 
 | Parámetro | Valor de partida |
 |---|---|
-| Corriente | 0–0,7 A (ajustar I_min de arranque e I_max según válvula) |
+| Corriente | 0 → I_max de la bobina (p. ej. 0,12 → 1,0 A; confirmar en la ficha de la bobina 24PG). Bobina nominal 24 V; alimentación del camión 20–30 V: el driver regula la **corriente** con PWM, así que la tensión de batería no afecta la posición |
 | Frecuencia PWM | 100–200 Hz (HYDAC/Sun) o 400 Hz + dither separado (Parker); seguir la ficha |
 | Dither | 100–250 Hz, amplitud 5–10 % de I_max, ajustable |
 | Rampas | Subida 0,1–0,5 s, bajada 0,1–0,3 s, ajustables por función |
-| Curva joystick | Zona muerta ±5 %, curva progresiva |
+| Señal del joystick | PWM de mando por sentido (A y B) de tu receptor → consigna de posición x_ref = PWM × 20 mm (o × 13 mm) en ese sentido; zona muerta ±5 %, curva progresiva. **La proporcionalidad recorrido/PWM la da el lazo de posición** (simulación S7: desvío < 2 mm en lazo cerrado frente a 30–40 % de histéresis en lazo abierto) |
 | Enclavamiento | Nunca energizar V_A y V_B a la vez |
 | Supervisión | Corriente real vs. consigna (bobina abierta/en corto), tensión de batería, temperatura |
 | Habilitación | Una salida "sistema activo" para la válvula de descarga, alimentada a través de la **cadena de seguridad por hardware** (paro de emergencia, *watchdog*, pérdida de enlace): sin esa cadena cerrada no hay 24 V ni para el dump ni para las bobinas |

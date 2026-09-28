@@ -1,60 +1,132 @@
 {
   "S1": {
-    "x_mm_0p3A": 17.37900547266186,
-    "x_mm_0p6A": 20.086559987046783,
-    "x_mm_1p0A": 20.19605493866769,
-    "t90_0p3A_s": 0.34,
-    "t_return_s": 0.25900000000000034
+    "x_mm_0p3A": 8.962101942106655,
+    "x_mm_0p6A": 20.066558709735617,
+    "x_mm_1p0A": 20.175999028609475,
+    "t90_0p3A_s": 0.36300000000000004,
+    "t_return_s": 0.13600000000000056
   },
   "S2": {
     "sin dither": {
-      "histeresis_pct_carrera": 48.93645656683828
+      "histeresis_pct_carrera": 46.43236156515046
     },
     "con dither 150 Hz, 5 %": {
-      "histeresis_pct_carrera": 46.959282632083585
+      "histeresis_pct_carrera": 41.28195609129825
     }
   },
   "S3": {
-    "t_retorno_1mm_s": 0.29600000000000004,
-    "x_final_mm": 3.354855511862617e-05,
-    "t_retorno_1mm_s_friccion120N": NaN,
-    "x_final_mm_friccion120N": 6.087161753620169
+    "t_retorno_1mm_s": 0.14700000000000002,
+    "x_final_mm": 1.619257894925319e-10,
+    "t_retorno_1mm_s_friccion120N": 0.4800000000000002,
+    "x_final_mm_friccion120N": 0.018149333593215508
   },
   "S3b": {
-    "t_retorno_activo_1mm_s": 0.121,
-    "x_final_mm": -0.05372273599191031
+    "t_retorno_activo_1mm_s": 0.123,
+    "x_final_mm": -0.0007939125908181509
   },
   "S4": {
-    "error_estacionario_mm_max": 0.5491648842222201,
-    "t90_10mm_s": 0.08000000000000007
+    "error_estacionario_mm_max": 0.468578017209774,
+    "t90_10mm_s": 0.09400000000000008
   },
   "S5": {
     "base: fricción 45 N, pilotaje 25 bar": {
-      "I_arranque_A": 0.21666666666666667,
-      "I_tope_A": 0.3626666666666667,
-      "x_max_mm": 20.19605493317542
+      "I_arranque_A": 0.2516666666666667,
+      "I_tope_A": 0.42533333333333334,
+      "x_max_mm": 20.175999023121623
     },
     "fricción 120 N (carrete sucio)": {
-      "I_arranque_A": 0.26433333333333336,
-      "I_tope_A": 0.41733333333333333,
-      "x_max_mm": 20.19605491421257
+      "I_arranque_A": 0.29500000000000004,
+      "I_tope_A": 0.48000000000000004,
+      "x_max_mm": 20.17599900422429
     },
     "pilotaje 15 bar (standby PVG 32)": {
-      "I_arranque_A": 0.21666666666666667,
-      "I_tope_A": 0.3626666666666667,
-      "x_max_mm": 20.13673695771342
+      "I_arranque_A": 0.2516666666666667,
+      "I_tope_A": 0.42533333333333334,
+      "x_max_mm": 20.11671064449233
     }
   },
   "S6": {
-    "sin resorte propio": {
+    "sin resorte propio (resorte roto / no montado)": {
       "t_retorno_1mm_s": NaN,
       "x_final_mm": 8.129719576075612
     },
-    "con paquete de centrado propio 60 N + 2 N/mm": {
-      "t_retorno_1mm_s": 0.2650000000000001,
-      "x_final_mm": 6.459144429732326e-10
+    "con paquete de centrado propio 50 N + 2,5 N/mm (diseño)": {
+      "t_retorno_1mm_s": 0.28300000000000014,
+      "x_final_mm": 8.150906782942027e-09
     }
   },
+  "S7": {
+    "lazo cerrado (sensor + PI): x_ref = PWM × 20 mm": {
+      "histeresis_pct_carrera": 4.726728649657599,
+      "desviacion_max_mm_vs_lineal": 1.7413395591950611
+    },
+    "lazo abierto, diseño (resorte 2,5 N/mm, fricción 45 N)": {
+      "histeresis_pct_carrera": 37.63631237467288,
+      "desviacion_max_mm_vs_lineal": 13.280118762438367
+    },
+    "lazo abierto, sellos PTFE (fricción 20 N)": {
+      "histeresis_pct_carrera": 27.515290960097065,
+      "desviacion_max_mm_vs_lineal": 13.694858751476614
+    }
+  },
+  "manual_vs_resorte": [
+    {
+      "F0": 0.0,
+      "c_Nmm": 0.0,
+      "Fc": 45.0,
+      "F_rod": 81.38330966417581,
+      "F_mango_rel3": 27.127769888058605
+    },
+    {
+      "F0": 0.0,
+      "c_Nmm": 0.0,
+      "Fc": 20.0,
+      "F_rod": 56.383309664175805,
+      "F_mango_rel3": 18.79443655472527
+    },
+    {
+      "F0": 50.0,
+      "c_Nmm": 2.5,
+      "Fc": 45.0,
+      "F_rod": 181.3833096641758,
+      "F_mango_rel3": 60.46110322139194
+    },
+    {
+      "F0": 50.0,
+      "c_Nmm": 2.5,
+      "Fc": 20.0,
+      "F_rod": 156.3833096641758,
+      "F_mango_rel3": 52.1277698880586
+    },
+    {
+      "F0": 60.0,
+      "c_Nmm": 4.0,
+      "Fc": 45.0,
+      "F_rod": 221.3833096641758,
+      "F_mango_rel3": 73.79443655472527
+    },
+    {
+      "F0": 60.0,
+      "c_Nmm": 4.0,
+      "Fc": 20.0,
+      "F_rod": 196.3833096641758,
+      "F_mango_rel3": 65.46110322139194
+    },
+    {
+      "F0": 80.0,
+      "c_Nmm": 8.0,
+      "Fc": 45.0,
+      "F_rod": 321.38330966417584,
+      "F_mango_rel3": 107.12776988805861
+    },
+    {
+      "F0": 80.0,
+      "c_Nmm": 8.0,
+      "Fc": 20.0,
+      "F_rod": 296.3833096641758,
+      "F_mango_rel3": 98.79443655472527
+    }
+  ],
   "modo_manual": {
     "v": 0.1,
     "Q_lpm": 3.6191147369354413,
@@ -79,8 +151,8 @@
     "m": 0.8,
     "F0": 60.0,
     "c": 8000.0,
-    "F0_mod": 0.0,
-    "c_mod": 0.0,
+    "F0_mod": 50.0,
+    "c_mod": 2500.0,
     "Fc": 45.0,
     "b": 300.0,
     "v0": 0.002,

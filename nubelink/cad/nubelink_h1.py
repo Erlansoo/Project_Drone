@@ -21,7 +21,7 @@ Salidas (carpeta ./out):
   nubelink_h1_piston.step       pistón
   nubelink_h1_vastago.step      vástago
   nubelink_h1_horquilla.step    horquilla de acople
-  nubelink_h1_caja_resorte.step caja del paquete de resorte de centrado (opcional)
+  nubelink_h1_caja_resorte.step caja del paquete de resorte de centrado (obligatorio: 50 N + 2,5 N/mm)
   nubelink_h1_iso.svg           vista isométrica
   nubelink_h1_corte.svg         medio corte longitudinal (muestra cámaras, puertos y pistón)
   nubelink_h1_frente.svg / _planta.svg  vistas ortogonales
@@ -87,7 +87,8 @@ P = dict(
     # Tuerca tope (M16: 24 mm entre caras)
     entre_caras_tuerca=24.0,
     esp_tuerca=8.0,
-    # Paquete de resorte de centrado propio (extremo -X): dos arandelas + resorte precargado tipo carrete
+    # Paquete de resorte de centrado propio (extremo -X, OBLIGATORIO): dos arandelas + resorte de matricería
+    # precargado tipo carrete (50 N + 2,5 N/mm de partida)
     resorte_centrado=True,
     D_caja=44.0, D_caja_int=36.0, L_caja=48.0, esp_pared_caja=4.0, D_abertura_caja=30.0,
     L_espaciador=8.0, D_espaciador_int=32.0,

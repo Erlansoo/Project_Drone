@@ -13,6 +13,7 @@ Escenarios:
   S4  lazo cerrado de posición PI con sensor                           -> seguimiento y error
   S5  sensibilidad: fricción 45 vs 120 N, pilotaje 25 vs 15 bar        -> x(I) en lazo abierto
   S6  distribuidor de resorte débil (35 N + 1 N/mm) con y sin resorte propio -> ¿vuelve a neutro sin energía?
+  S7  señal PWM del joystick -> posición: lazo cerrado vs lazo abierto           -> proporcionalidad e histéresis
 """
 import json
 import os
@@ -155,8 +156,8 @@ def main():
 
     # ---------------- S6: distribuidor de resorte débil, con y sin resorte propio ----------------
     debil = dict(F0=35.0, c=1000.0, Fc=35.0)      # p. ej. PVG 32 visto desde la horquilla (relación de palanca ~3)
-    casos6 = [("sin resorte propio", dict(), C["s2"]),
-              ("con paquete de centrado propio 60 N + 2 N/mm", dict(F0_mod=60.0, c_mod=2000.0), C["s1"])]
+    casos6 = [("sin resorte propio (resorte roto / no montado)", dict(F0_mod=0.0, c_mod=0.0), C["s2"]),
+              ("con paquete de centrado propio 50 N + 2,5 N/mm (diseño)", dict(), C["s1"])]
     fig, axs = fig_ax(1, 3.4, "S6 · Corte total con distribuidor de resorte débil (35 N + 1 N/mm, fricción 35 N)")
     res["S6"] = {}
     for lab, over, col in casos6:
@@ -169,18 +170,57 @@ def main():
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "S6_resorte_debil.png")); plt.close(fig)
     print(f"S6 listo ({time.time()-t0:.0f} s)")
 
-    res["modo_manual"] = manual_mode_force(p, 0.1)
-    res["modo_manual_con_resorte"] = manual_mode_force(dict(p, F0_mod=60.0, c_mod=2000.0), 0.1)
+    # ---------------- S7: señal PWM del joystick -> posición del pistón ----------------
+    # Consigna D(t): rampa triangular lenta 0 -> 100 % -> 0 en 8 s (una válvula, un sentido).
+    # Lazo cerrado: x_ref = D · 20 mm.  Lazo abierto: I = I0 + D · (I_max - I0), sin sensor.
+    def duty(t):
+        return min(t / 4.0, (8.0 - t) / 4.0) if t < 8.0 else 0.0
+    def xref7(t):
+        return duty(t) * p["x_max"]
+    def cmd7(t):
+        return p["I0"] + duty(t) * (p["I_max"] - p["I0"]), 0.0
+    casos7 = [("lazo cerrado (sensor + PI): x_ref = PWM × 20 mm", dict(), None, C["s1"]),
+              ("lazo abierto, diseño (resorte 2,5 N/mm, fricción 45 N)", dict(), cmd7, C["s2"]),
+              ("lazo abierto, sellos PTFE (fricción 20 N)", dict(Fc=20.0), cmd7, C["s3"])]
+    fig, axs = fig_ax(1, 4.4, "S7 · Recorrido del pistón vs. señal PWM del joystick (0 → 100 % → 0 en 8 s, un sentido)")
+    res["S7"] = {}
+    for lab, over, cmd, col in casos7:
+        pp = dict(p, **over)
+        r7 = simulate(pp, 8.0, cmd=cmd, x_ref=(None if cmd else xref7))
+        D = np.array([duty(tt) for tt in r7.t]) * 100.0
+        w = hysteresis_width(D / 100.0, r7.x, 1.0)
+        n = len(D) // 2
+        lin = float(np.max(np.abs(r7.x[:n] * 1e3 - D[:n] / 100.0 * p["x_max"] * 1e3)))
+        res["S7"][lab] = dict(histeresis_pct_carrera=w, desviacion_max_mm_vs_lineal=lin)
+        axs[0].plot(D, r7.x * 1e3, color=col, label=f"{lab} · histéresis {w:.0f} %, desvío máx. {lin:.1f} mm")
+    axs[0].plot([0, 100], [0, 20], color=C["muted"], lw=0.9, ls=":", label="proporcional ideal")
+    axs[0].set_xlabel("señal PWM del joystick [% del sentido A]"); axs[0].set_ylabel("posición del pistón [mm]")
+    axs[0].legend(loc="lower right")
+    fig.tight_layout(); fig.savefig(os.path.join(OUT, "S7_pwm_posicion.png")); plt.close(fig)
+    print(f"S7 listo ({time.time()-t0:.0f} s)")
+
+    # ---------------- fuerza en la palanca en modo manual según el resorte propio ----------------
+    res["manual_vs_resorte"] = []
+    for F0m, cm in ((0.0, 0.0), (50.0, 2500.0), (60.0, 4000.0), (80.0, 8000.0)):
+        for Fc in (45.0, 20.0):
+            mf = manual_mode_force(dict(p, F0_mod=F0m, c_mod=cm, Fc=Fc), 0.1)
+            res["manual_vs_resorte"].append(dict(F0=F0m, c_Nmm=cm / 1000.0, Fc=Fc, F_rod=mf["F_total"], F_mango_rel3=mf["F_total"] / 3.0))
+
+    res["modo_manual"] = manual_mode_force(dict(p, F0_mod=0.0, c_mod=0.0), 0.1)
+    res["modo_manual_con_resorte"] = manual_mode_force(p, 0.1)
     res["parametros"] = {k: (v if isinstance(v, (int, float, bool)) else str(v)) for k, v in p.items()}
     with open(os.path.join(OUT, "resultados.json"), "w") as f:
         json.dump(res, f, indent=2, ensure_ascii=False)
 
-    S1, S2, S3, S3b, S4, S5, S6 = res["S1"], res["S2"], res["S3"], res["S3b"], res["S4"], res["S5"], res["S6"]
+    S1, S2, S3, S3b, S4, S5, S6, S7 = res["S1"], res["S2"], res["S3"], res["S3b"], res["S4"], res["S5"], res["S6"], res["S7"]
+    filas_manual = "\n".join(
+        f"| {d['F0']:.0f} N + {d['c_Nmm']:.1f} N/mm | {d['Fc']:.0f} N | {d['F_rod']:.0f} N | {d['F_mango_rel3']:.0f} N |"
+        for d in res["manual_vs_resorte"])
     mm, mmr = res["modo_manual"], res["modo_manual_con_resorte"]
     md = f"""# Resultados de simulación Nubelink H1 (modelo de parámetros concentrados)
 
 Parámetros: pistón Ø32/Ø16 (603 mm²), carrera ±20 mm, válvula 0–20 bar / 12 L/min, pilotaje 25 bar,
-resorte del carrete 60 N + 8 N/mm (SUPUESTO), fricción 45 N (SUPUESTO), I_max 1,0 A, zona muerta 0,12 A.
+resorte del carrete 60 N + 8 N/mm (SUPUESTO), resorte propio del módulo 50 N + 2,5 N/mm, fricción 45 N (SUPUESTO), I_max 1,0 A, zona muerta 0,12 A.
 
 | Escenario | Resultado |
 |---|---|
@@ -197,8 +237,17 @@ resorte del carrete 60 N + 8 N/mm (SUPUESTO), fricción 45 N (SUPUESTO), I_max 1
 | S5 con pilotaje 15 bar | {S5[casos[2][0]]['I_arranque_A']:.2f} → {S5[casos[2][0]]['I_tope_A']:.2f} A |
 | S6 resorte débil (35 N + 1 N/mm), corte total, sin resorte propio | {fmt_ms(S6[casos6[0][0]]['t_retorno_1mm_s'])}, queda en {S6[casos6[0][0]]['x_final_mm']:.1f} mm |
 | S6 ídem con paquete de centrado propio 60 N + 2 N/mm | {fmt_ms(S6[casos6[1][0]]['t_retorno_1mm_s'])}, queda en {S6[casos6[1][0]]['x_final_mm']:.1f} mm |
+| S7 PWM → posición, lazo cerrado | histéresis {S7[casos7[0][0]]['histeresis_pct_carrera']:.0f} %, desvío máx. respecto a la recta {S7[casos7[0][0]]['desviacion_max_mm_vs_lineal']:.1f} mm |
+| S7 PWM → posición, lazo abierto (diseño) | histéresis {S7[casos7[1][0]]['histeresis_pct_carrera']:.0f} %, desvío máx. {S7[casos7[1][0]]['desviacion_max_mm_vs_lineal']:.1f} mm |
+| S7 PWM → posición, lazo abierto con sellos PTFE (20 N) | histéresis {S7[casos7[2][0]]['histeresis_pct_carrera']:.0f} %, desvío máx. {S7[casos7[2][0]]['desviacion_max_mm_vs_lineal']:.1f} mm |
 | Modo manual a 0,1 m/s, sin resorte propio | {mm['Q_lpm']:.1f} L/min, Δp {mm['dp_bar']:.2f} bar → {mm['F_hyd']:.0f} N hidr. + {mm['F_fric']:.0f} N fricción = **{mm['F_total']:.0f} N** extra en la horquilla |
-| Modo manual a 0,1 m/s, con resorte propio 60 N + 2 N/mm | {mmr['F_hyd']:.0f} + {mmr['F_fric']:.0f} + {mmr['F_resorte_modulo_tope']:.0f} N (resorte a tope) = **{mmr['F_total']:.0f} N** extra en la horquilla |
+| Modo manual a 0,1 m/s, con resorte propio 50 N + 2,5 N/mm (diseño) | {mmr['F_hyd']:.0f} + {mmr['F_fric']:.0f} + {mmr['F_resorte_modulo_tope']:.0f} N (resorte a tope) = **{mmr['F_total']:.0f} N** extra en la horquilla |
+
+### Fuerza extra en modo manual según el resorte propio (a 0,1 m/s, a fin de carrera; palanca con relación 3)
+
+| Resorte propio | Fricción | Extra en la horquilla | Extra en la empuñadura |
+|---|---|---|---|
+{filas_manual}
 
 ## Conclusiones de diseño
 
@@ -207,16 +256,18 @@ resorte del carrete 60 N + 8 N/mm (SUPUESTO), fricción 45 N (SUPUESTO), I_max 1
    un problema de la válvula ni del dither: es fricción / rigidez del resorte. Por eso el MOD10 lleva realimentación mecánica.
 2. **Con sensor de posición y lazo PI el módulo posiciona a ≈ ±0,5 mm en menos de 100 ms**, usando el empuje sobrante para vencer la
    fricción. El sensor no es "fase 2": es parte del diseño.
-3. **Retorno a neutro**: con el resorte del distribuidor y fricción baja vuelve solo (~0,3 s); con carrete sucio (120 N) o
-   distribuidor de resorte débil (PVG 32 visto desde la horquilla) **se queda fuera de neutro**. Dos medidas, ambas:
-   (a) secuencia "retorno activo a neutro en lazo cerrado → dump" (0,5 s), como el dump retardado del MOD10;
-   (b) paquete de resorte de centrado propio en el módulo (≈ 60 N + 2 N/mm) para el caso sin energía.
-4. **Modo manual**: el resorte propio cuesta ~100 N más en la horquilla a fin de carrera (≈ 30–35 N en la empuñadura con
-   relación de palanca 3). Si un cliente lo rechaza, la alternativa es el perno de desacople rápido en la horquilla.
-5. La presión de pilotaje (15 vs 25 bar) casi no cambia nada; la fricción sí. **Prioridad del banco: medir y minimizar fricción**
+3. **Retorno a neutro**: el paquete de resorte propio (50 N + 2,5 N/mm, obligatorio) devuelve el pistón a neutro en ~0,3 s
+   aunque el distribuidor tenga resorte débil o el carrete esté sucio (S6). Además, con energía, la secuencia "retorno activo
+   en lazo cerrado → dump 0,5 s después" lo hace más rápido y verifica el neutro con el sensor (S3b).
+4. **PWM → posición (S7)**: con el lazo cerrado el recorrido es proporcional a la señal del joystick (desvío < 1 mm). En lazo
+   abierto la curva es una S con histéresis grande; sólo con fricción muy baja y resortes más rígidos se acerca a la recta,
+   y eso encarece el modo manual (tabla de fuerzas). Conclusión: la proporcionalidad la da el lazo; el resorte, la seguridad.
+5. **Modo manual**: el resorte de diseño cuesta ~100 N más en la horquilla a fin de carrera (≈ 35 N en la empuñadura con
+   relación de palanca 3). Bajar la fricción (PTFE) importa tanto como el resorte.
+6. La presión de pilotaje (15 vs 25 bar) casi no cambia nada; la fricción sí. **Prioridad del banco: medir y minimizar fricción**
    (sellos PTFE en pistón y vástago).
 
-Figuras: S1_escalones.png · S2_histeresis.png · S3_falla_segura.png · S4_lazo_cerrado.png · S5_sensibilidad.png · S6_resorte_debil.png
+Figuras: S1_escalones.png · S2_histeresis.png · S3_falla_segura.png · S4_lazo_cerrado.png · S5_sensibilidad.png · S6_resorte_debil.png · S7_pwm_posicion.png
 """
     with open(os.path.join(OUT, "resultados.md"), "w") as f:
         f.write(md)

@@ -37,9 +37,9 @@ def default_params() -> dict:
         # --- carga: resorte de centrado del carrete referido a la horquilla ---
         F0=60.0,                                # N, precarga del resorte (SUPUESTO; medir)
         c=8000.0,                               # N/m, rigidez (SUPUESTO; 8 N/mm -> 220 N a 20 mm; medir)
-        # --- resorte de centrado PROPIO del módulo (paquete tipo carrete en el extremo trasero); 0 = sin resorte ---
-        F0_mod=0.0,                             # N, precarga
-        c_mod=0.0,                              # N/m, rigidez
+        # --- resorte de centrado PROPIO del módulo (paquete tipo carrete en el extremo trasero, OBLIGATORIO) ---
+        F0_mod=50.0,                            # N, precarga (resorte de matricería comprimido ~15 mm en montaje)
+        c_mod=2500.0,                           # N/m, rigidez (2,5 N/mm -> 100 N a fin de carrera)
         # --- fricción (pistón PTFE + sellos de vástago + carrete) ---
         Fc=45.0,                                # N, Coulomb (SUPUESTO; objetivo de ensayo T2 < 40 N)
         b=300.0,                                # N·s/m, viscosa

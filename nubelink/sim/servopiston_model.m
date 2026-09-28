@@ -63,7 +63,7 @@ function p = default_params()
     p.x_max = 0.020;                  % carrera ±20 mm
     p.m = 0.8;                        % kg (SUPUESTO)
     p.F0 = 60;  p.c = 8000;           % N, N/m  resorte del carrete referido a la horquilla (SUPUESTO; medir)
-    p.F0_mod = 0; p.c_mod = 0;        % resorte de centrado propio del módulo (0 = sin resorte; probar 60 N + 2000 N/m)
+    p.F0_mod = 50; p.c_mod = 2500;    % resorte de centrado propio del módulo (OBLIGATORIO): 50 N + 2,5 N/mm
     p.Fc = 45;  p.b = 300; p.v0 = 0.002;   % fricción (SUPUESTO; ensayo T2)
     p.k_stop = 5e6; p.d_stop = 5e3;
     p.p_s = 25*BAR;                   % pilotaje disponible
