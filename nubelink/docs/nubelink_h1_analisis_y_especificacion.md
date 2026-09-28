@@ -14,7 +14,8 @@ Fecha: 2026-09-28 · Estado: concepto de ingeniería para banco de pruebas (no v
 4. **Modo manual:** funciona porque, sin energía, ambas cámaras del pistón quedan a tanque y la válvula de descarga (dump) elimina la contrapresión. El operador mueve la palanca arrastrando un pistón libre. Ese es el requisito de diseño n.º 1 del H1 (fricción de sellos baja).
 5. **Fabricación:** cuerpo cilíndrico Ø70 × 110 mm en acero C45, camisa Ø32 bruñida, tapas roscadas, vástago pasante Ø16 cromado, puertos G1/4 → **1 206 N a 20 bar / 1 508 N a 25 bar (paridad con el MOD10: 1 300 N)**. Todo torno + taladro. El bloque de válvulas (2 cavidades FC08-3 por función, galerías P/T, salidas A/B) sí es trabajo para la CNC 6090 en aluminio. Galerías cruzadas se cierran con **tapones roscados con sello** o **tapones expansores**, nunca con soldadura ni pernos comunes.
 6. **Seguridad:** la cadena de parada (paro de emergencia, pérdida de enlace) debe cortar por **hardware** la válvula de descarga y las bobinas, independiente del microcontrolador. La práctica del sector para radiocontroles de grúa es **PL d / Categoría 3 (ISO 13849-1)** para la función de parada, y EN 12999 es la norma de referencia de la grúa.
-7. **Dinero:** el kit Scanreco RC400 + MOD10 de 4 funciones se vende en ~USD 6 300 (incluye la radio). Tu versión, usando tu propia radio, tiene un costo hidráulico estimado de USD 2 000–3 500 por grúa de 4 funciones (válvulas importadas + bloque local). El margen será menor que el 5× de tu negocio actual, pero abre el mercado de grúas manuales que hoy no puedes atender y el mismo bloque sirve para otras máquinas (perforadoras, forestales, agrícolas).
+7. **Lo que dice la simulación (carpeta `sim/`):** el control "presión ∝ corriente" sin sensor **no sirve** con este pistón: satura a 0,3 A y la histéresis es la mitad de la carrera, porque el resorte del carrete es blando frente a la fricción. Con **sensor de posición y lazo PI** posiciona a ≈ ±0,5 mm en < 100 ms. Y para volver a neutro hacen falta dos cosas: la secuencia **"retorno activo a neutro → dump 0,5 s después"** (el dump retardado del MOD10) y un **paquete de resorte de centrado propio** (≈ 60 N + 2 N/mm) para el caso sin energía. Todo esto ya está en el CAD y en el modelo.
+8. **Dinero:** el kit Scanreco RC400 + MOD10 de 4 funciones se vende en ~USD 6 300 (incluye la radio). Tu versión, usando tu propia radio, tiene un costo hidráulico estimado de USD 2 000–3 500 por grúa de 4 funciones (válvulas importadas + bloque local). El margen será menor que el 5× de tu negocio actual, pero abre el mercado de grúas manuales que hoy no puedes atender y el mismo bloque sirve para otras máquinas (perforadoras, forestales, agrícolas).
 
 ---
 
@@ -169,7 +170,8 @@ Modelo 3D paramétrico: [`../cad/nubelink_h1.py`](../cad/nubelink_h1.py) · STEP
 | Montaje | Cara plana inferior 100 × 36 mm con **4 × M8** (80 × 24 mm) | O abrazaderas partidas sobre el Ø70 (hechas en la 6090) |
 | Horquilla | Clevis 34 × 20 × 24 mm, ranura 10 mm, perno Ø10, roscada M12 al vástago | Se adapta a cada varilla de grúa; MOD10 usa el mismo esquema horquilla + abrazadera en la varilla |
 | Sensor | Imán en disco Ø24 en el extremo trasero + sensor Hall lineal fijo al cuerpo; o potenciómetro lineal 0–50 mm | Salida 0–5 V / 0,5–4,5 V al receptor |
-| Masa estimada | ≈ 3,3 kg con vástago y horquilla (acero); ≈ 1,6 kg en aluminio | |
+| Resorte de centrado propio | Paquete tipo carrete en el extremo trasero: caja Ø44 × 48 mm con dos paredes (aberturas Ø30), dos arandelas Ø34, resorte precargado **≈ 60 N + 2 N/mm**, collar en el vástago y tuerca | Garantiza el retorno a neutro sin energía aunque el distribuidor tenga resorte débil o el carrete esté sucio (simulación S6). Cuesta ≈ 100 N más en la horquilla a fin de carrera en modo manual |
+| Masa estimada | ≈ 3,8 kg con vástago, horquilla y paquete de resorte (acero); ≈ 2,0 kg en aluminio | |
 
 ### 5.2 Tolerancias y acabados críticos
 
@@ -246,7 +248,8 @@ Por función se necesitan **dos salidas en corriente** (no en tensión: la resis
 | Enclavamiento | Nunca energizar V_A y V_B a la vez |
 | Supervisión | Corriente real vs. consigna (bobina abierta/en corto), tensión de batería, temperatura |
 | Habilitación | Una salida "sistema activo" para la válvula de descarga, alimentada a través de la **cadena de seguridad por hardware** (paro de emergencia, *watchdog*, pérdida de enlace): sin esa cadena cerrada no hay 24 V ni para el dump ni para las bobinas |
-| Realimentación (fase 2) | Entrada analógica por función (sensor 0–5 V); lazo PI de posición; alarma si el pistón no vuelve a neutro ±1 mm en 0,5 s tras soltar el joystick |
+| Secuencia de paro / soltar joystick | 1) consigna de posición = 0 en lazo cerrado (retorno activo, ~0,3 s); 2) cuando \|x\| < 1 mm o a los 0,5 s, abrir dump y cortar bobinas. Paro de emergencia: igual pero con límite 0,3 s; si el sensor está en falla, dump inmediato |
+| Realimentación (**obligatoria**) | Entrada analógica por función (sensor 0–5 V); lazo PI de posición a 1 kHz (Kp ≈ 0,015 A/mm, Ki ≈ 0,25 A/(mm·s) de partida); alarma si el pistón no vuelve a neutro ±1 mm en 0,5 s tras soltar. La simulación (`sim/out/resultados.md`) muestra que sin sensor el módulo satura a 0,3 A y tiene ~50 % de histéresis |
 
 Para el banco de pruebas basta un driver de dos canales en corriente (o el propio receptor en modo de prueba) y una fuente 24 V / 5 A.
 
@@ -254,7 +257,7 @@ Para el banco de pruebas basta un driver de dos canales en corriente (o el propi
 
 ## 9. Seguridad: lo que no se puede omitir
 
-1. **Estado seguro sin energía.** Válvulas sin corriente ⇒ A y B a tanque; dump abierta ⇒ sin contrapresión. El resorte del distribuidor centra el carrete. Verificar en banco que el resorte vence la fricción del pistón con margen (fricción objetivo < 40 N; resorte del distribuidor típicamente > 60 N en neutro). Si algún distribuidor tiene resortes débiles, el módulo H2 lleva resortes de centrado propios.
+1. **Estado seguro sin energía.** Válvulas sin corriente ⇒ A y B a tanque; dump abierta ⇒ sin contrapresión. El resorte del distribuidor **más el paquete de resorte propio del módulo** centran el carrete. La simulación S3/S6 muestra que el resorte del distribuidor solo no basta si hay fricción alta (carrete sucio, 120 N) o resortes débiles (35 N en la horquilla): el paquete propio de 60 N + 2 N/mm lo resuelve en ~0,3 s. Verificar en banco (fricción objetivo < 40 N; PTFE en pistón y vástagos).
 2. **Cadena de parada independiente del software.** Relé de seguridad o circuito discreto que corte la alimentación de dump y bobinas por: paro de emergencia en el emisor, pérdida de enlace (> 0,5 s), *watchdog* del micro, selector manual/remoto. Objetivo **PL d / Categoría 3** para la función de parada (referencia del sector para radiocontroles de grúa). Documentar con ISO 13849-1.
 3. **Un solo puesto de mando activo.** Selector físico manual/remoto. En remoto, las palancas siguen accesibles (Scanreco lo permite) pero el procedimiento debe exigir que nadie opere las palancas con la radio activa. Como respaldo mecánico duro: **perno de desacople rápido** en cada horquilla.
 4. **Presión piloto limitada.** Reductora + alivio 40 bar + mangueras de 2 alambres. Sin esto, una falla de la reductora manda 300 bar a un bloque de sellos de baja presión.
@@ -340,6 +343,7 @@ Propiedad intelectual: el principio (pistones de pilotaje + reductoras proporcio
 
 | Fase | Entregable | Duración estimada |
 |---|---|---|
+| **S0 (ahora)** | Modelo dinámico `sim/` con los números medidos en la primera grúa (carrera, resorte, paso) → confirma pistón, rango de válvula y ganancias del lazo | 1 semana |
 | **H1** | 1 módulo cilíndrico + bloque de alimentación en banco; ensayos T1–T9; informe de caracterización | 6–10 semanas (dependiendo de importación de válvulas) |
 | **H1-G** | El mismo módulo instalado en una función de una grúa real (sin carga → con carga bajo supervisión), con selector manual/remoto y cadena de parada | 3–4 semanas |
 | **H2** | Bloque **modular** de 4–6 secciones en aluminio (paso = paso de varillas), camisas de acero insertadas o cuerpo de acero, galerías P/T pasantes con O-ring, cavidades para 2 válvulas por sección, sensores integrados; manifold de alimentación integrado | 8–12 semanas |

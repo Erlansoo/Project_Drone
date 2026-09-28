@@ -1,0 +1,28 @@
+S1 listo (1 s)
+S2 listo (7 s)
+S3 listo (9 s)
+S4 listo (10 s)
+S5 listo (14 s)
+# Resultados de simulación Nubelink H1 (modelo de parámetros concentrados)
+
+Parámetros: pistón Ø32/Ø16 (603 mm²), carrera ±20 mm, válvula 0–20 bar / 12 L/min, pilotaje 25 bar,
+resorte del carrete 60 N + 8 N/mm (SUPUESTO), fricción 45 N (SUPUESTO), I_max 1,0 A, zona muerta 0,12 A.
+
+| Escenario | Resultado |
+|---|---|
+| S1 posición en lazo abierto | 0,3 A → 17.4 mm · 0,6 A → 20.1 mm · 1,0 A → 20.2 mm (tope 20 mm) |
+| S1 tiempo al 90 % del escalón 0,3→0,6 A | 21 ms |
+| S1 retorno a neutro al soltar (90 %) | 259 ms |
+| S2 histéresis sin dither | 48.9 % de la carrera |
+| S2 histéresis con dither 150 Hz / 5 % | 47.0 % de la carrera |
+| S3 retorno a |x| < 1 mm tras corte (fricción 45 N) | 296 ms, posición final 0.00 mm |
+| S3 ídem con fricción 120 N (carrete sucio) | nan ms, posición final 6.09 mm |
+| S4 lazo cerrado: error estacionario máx. | 0.33 mm · t90 del escalón de 10 mm: 57 ms |
+| S5 corriente de arranque / tope, base | 0.22 A / 20.2 mm |
+| S5 con fricción 120 N | 0.26 A / 20.2 mm |
+| S5 con pilotaje 15 bar | 0.22 A / 20.1 mm |
+| Modo manual a 0,1 m/s (válvulas sin energía) | caudal 3.6 L/min, Δp 0.60 bar → 36 N hidráulicos + 45 N fricción = **81 N** extra en la horquilla |
+
+Figuras: S1_escalones.png · S2_histeresis.png · S3_falla_segura.png · S4_lazo_cerrado.png · S5_sensibilidad.png
+
+Total 14 s. Archivos en /home/user/Project_Drone/nubelink/sim/out

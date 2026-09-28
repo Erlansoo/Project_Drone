@@ -21,6 +21,7 @@ Salidas (carpeta ./out):
   nubelink_h1_piston.step       pistón
   nubelink_h1_vastago.step      vástago
   nubelink_h1_horquilla.step    horquilla de acople
+  nubelink_h1_caja_resorte.step caja del paquete de resorte de centrado (opcional)
   nubelink_h1_iso.svg           vista isométrica
   nubelink_h1_corte.svg         medio corte longitudinal (muestra cámaras, puertos y pistón)
   nubelink_h1_frente.svg / _planta.svg  vistas ortogonales
@@ -49,7 +50,7 @@ P = dict(
     prof_rosca_tapa=14.0,   # profundidad de rosca / alojamiento de tapa en cada extremo
     # Pistón y vástago
     D_vastago=16.0,         # vástago pasante Ø16 f7, cromado duro
-    L_vastago=220.0,        # largo total del vástago
+    L_vastago=260.0,        # largo total del vástago (260 con paquete de resorte; 220 sin él)
     D_rosca_vastago=12.0,   # rosca en los extremos del vástago (M12)
     L_rosca_vastago=22.0,
     L_piston=20.0,          # espesor del pistón
@@ -86,6 +87,13 @@ P = dict(
     # Tuerca tope (M16: 24 mm entre caras)
     entre_caras_tuerca=24.0,
     esp_tuerca=8.0,
+    # Paquete de resorte de centrado propio (extremo -X): dos arandelas + resorte precargado tipo carrete
+    resorte_centrado=True,
+    D_caja=44.0, D_caja_int=36.0, L_caja=48.0, esp_pared_caja=4.0, D_abertura_caja=30.0,
+    L_espaciador=8.0, D_espaciador_int=32.0,
+    D_arandela=34.0, esp_arandela=3.0,
+    D_resorte_ext=28.0, D_resorte_int=20.0,
+    D_collar=24.0, L_collar=5.0,
 )
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
@@ -209,6 +217,34 @@ def porta_iman():
     return d
 
 
+def paquete_resorte(x_c):
+    """Piezas del paquete de centrado, ubicadas. x_c = cara exterior de la brida de la tapa -X.
+    Espaciador -> caja con dos paredes (aberturas Ø30) -> arandelas contra las paredes -> resorte entre
+    arandelas -> collar fijo al vástago (lado tapa) y tuerca (lado libre) que empujan cada arandela."""
+    Le, Lc, e = P["L_espaciador"], P["L_caja"], P["esp_pared_caja"]
+    piezas = {}
+    piezas["espaciador"] = cil_x(P["D_caja"], Le, x_c - Le).cut(cil_x(P["D_espaciador_int"], Le + 2, x_c - Le - 1))
+    caja = cil_x(P["D_caja"], Lc, x_c - Le - Lc)
+    caja = caja.cut(cil_x(P["D_caja_int"], Lc - 2 * e, x_c - Le - Lc + e))          # interior
+    caja = caja.cut(cil_x(P["D_abertura_caja"], Lc + 2, x_c - Le - Lc - 1))          # aberturas en ambas paredes
+    piezas["caja_resorte"] = caja
+    ea = P["esp_arandela"]
+    ar = lambda x0: cil_x(P["D_arandela"], ea, x0).cut(cil_x(P["D_vastago"] + 0.5, ea + 2, x0 - 1))
+    x_a1 = x_c - Le - e - ea            # arandela 1 contra la pared cercana a la tapa
+    x_a2 = x_c - Le - Lc + e            # arandela 2 contra la pared lejana
+    piezas["arandela_1"] = ar(x_a1)
+    piezas["arandela_2"] = ar(x_a2)
+    L_res = x_a1 - (x_a2 + ea)
+    piezas["resorte"] = cil_x(P["D_resorte_ext"], L_res, x_a2 + ea).cut(cil_x(P["D_resorte_int"], L_res + 2, x_a2 + ea - 1))
+    # collar del vástago: atraviesa la abertura de la pared cercana y toca la arandela 1
+    piezas["collar"] = cil_x(P["D_collar"], P["L_collar"], x_c - Le - e).cut(cil_x(P["D_vastago"] + 0.05, P["L_collar"] + 2, x_c - Le - e - 1))
+    # tuerca: atraviesa la abertura de la pared lejana y toca la arandela 2
+    x_n = x_a2 - P["esp_tuerca"]
+    piezas["tuerca_resorte"] = cil_x(P["D_collar"], P["esp_tuerca"], x_n).cut(cil_x(P["D_rosca_vastago"], P["esp_tuerca"] + 2, x_n - 1))
+    piezas["_x_fin"] = x_n
+    return piezas
+
+
 def ensamble():
     L = P["L_cuerpo"]
     esp = P["prof_rosca_tapa"]
@@ -226,8 +262,19 @@ def ensamble():
     # tuercas tope: separación = carrera_ajustada respecto a la brida (ejemplo ±13 mm)
     g = P["carrera_ajustada"]
     a.add(tuerca_tope(), name="tope_der", loc=cq.Location(cq.Vector(x_brida + g, 0, 0)), color=cq.Color(0.25, 0.25, 0.28))
-    a.add(tuerca_tope(), name="tope_izq", loc=cq.Location(cq.Vector(-(x_brida + g) - P["esp_tuerca"], 0, 0)), color=cq.Color(0.25, 0.25, 0.28))
-    a.add(porta_iman(), name="porta_iman", loc=cq.Location(cq.Vector(-x_fin_vastago - 4.0, 0, 0)), color=cq.Color(0.20, 0.45, 0.75))
+    if P["resorte_centrado"]:
+        pr = paquete_resorte(-x_brida)
+        colores = {"espaciador": (0.45, 0.47, 0.50), "caja_resorte": (0.55, 0.57, 0.60), "arandela_1": (0.30, 0.30, 0.32),
+                   "arandela_2": (0.30, 0.30, 0.32), "resorte": (0.85, 0.55, 0.20), "collar": (0.25, 0.25, 0.28),
+                   "tuerca_resorte": (0.25, 0.25, 0.28)}
+        for n, pieza in pr.items():
+            if n.startswith("_"):
+                continue
+            a.add(pieza, name=n, color=cq.Color(*colores[n]))
+        a.add(porta_iman(), name="porta_iman", loc=cq.Location(cq.Vector(pr["_x_fin"] - 5.0, 0, 0)), color=cq.Color(0.20, 0.45, 0.75))
+    else:
+        a.add(tuerca_tope(), name="tope_izq", loc=cq.Location(cq.Vector(-(x_brida + g) - P["esp_tuerca"], 0, 0)), color=cq.Color(0.25, 0.25, 0.28))
+        a.add(porta_iman(), name="porta_iman", loc=cq.Location(cq.Vector(-x_fin_vastago - 4.0, 0, 0)), color=cq.Color(0.20, 0.45, 0.75))
     return a
 
 
@@ -254,6 +301,8 @@ def exportar():
         "cuerpo": cuerpo(), "tapa": tapa(), "piston": piston(),
         "vastago": vastago(), "horquilla": horquilla(),
     }
+    if P["resorte_centrado"]:
+        piezas["caja_resorte"] = paquete_resorte(0.0)["caja_resorte"]
     for n, wp in piezas.items():
         cq.exporters.export(wp, os.path.join(OUT, f"nubelink_h1_{n}.step"))
     cq.exporters.export(piezas["cuerpo"], os.path.join(OUT, "nubelink_h1_cuerpo.stl"), tolerance=0.02, angularTolerance=0.1)
