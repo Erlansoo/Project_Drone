@@ -41,7 +41,7 @@
   <path d="M283 430 L295 430" class="l"/>
   <path d="M283 416 l4 -6 l4 6 l4 -6 l4 6" class="l"/>
   <text x="206" y="482" class="g">Bloque de contrapresión</text>
-  <text x="206" y="496" class="g">(retención tarada 25–30 bar,</text>
+  <text x="206" y="496" class="g">(alivio pilotado venteado 20–25 bar,</text>
   <text x="206" y="510" class="g">dimensionada al caudal de la bomba)</text>
   <path d="M320 430 L420 430" class="l" marker-end="url(#arr)"/>
 
@@ -52,7 +52,7 @@
   <path d="M283 548 L297 572" class="l red"/>
   <path d="M320 560 L360 560 L360 705" class="p red"/>
   <path d="M340 690 L340 705 L380 705 L380 690" class="l"/>
-  <text x="110" y="640" class="g" fill="#b3261e" font-weight="bold">Dump 2/2 normalmente ABIERTA:</text>
+  <text x="110" y="640" class="g" fill="#b3261e" font-weight="bold">Dump 2/2 NA en el venteo:</text>
   <text x="110" y="654" class="g" fill="#b3261e">sin energía → P a tanque, sin</text>
   <text x="110" y="668" class="g" fill="#b3261e">contrapresión, pistones libres</text>
   <text x="110" y="682" class="g" fill="#b3261e">= MODO MANUAL</text>
@@ -79,7 +79,7 @@
   <path d="M265 300 L315 300" class="l"/>
   <path d="M290 282 L290 318" class="l"/>
   <path d="M283 322 l4 6 l4 -6 l4 6" class="l"/>
-  <text x="232" y="254" class="g">Reductora 3 vías fija, tara 30 bar</text>
+  <text x="232" y="254" class="g">Reductora 3 vías fija, tara 25–30 bar</text>
   <text x="232" y="268" class="g">(entrada hasta 350 bar)</text>
   <path d="M320 300 L345 300" class="p"/>
   <path d="M360 285 L375 300 L360 315 L345 300 Z" class="l"/>
@@ -118,7 +118,7 @@
   <rect x="890" y="145" width="26" height="30" class="box"/>
   <path d="M893 150 L913 170 M893 170 L913 150" class="l"/>
   <text x="920" y="163" class="g">24 V PWM</text>
-  <text x="757" y="206" class="g">rango 0–20 / 0–35 bar · corriente ↑ ⇒ presión en A ↑ · sin corriente: A→T</text>
+  <text x="757" y="206" class="g">HYDAC PDR08-01 (0–20 bar, 12 L/min, 350 bar) · I ↑ ⇒ p_A ↑ · sin corriente: A→T</text>
   <!-- P entra por abajo-izq, T sale por abajo-der, A por arriba -->
   <path d="M760 300 L760 225 L820 225 L820 190" class="p"/>
   <text x="808" y="222" class="g">P</text>
@@ -144,13 +144,13 @@
   <text x="1065" y="418" class="g">B</text>
 
   <!-- Servopistón -->
-  <text x="905" y="318" class="g" font-weight="bold">Servopistón Ø25 / vástago pasante Ø12</text>
+  <text x="905" y="318" class="g" font-weight="bold">Servopistón Ø32 / vástago pasante Ø16</text>
   <text x="905" y="332" class="g">carrera ±20 mm (topes ajustables, p. ej. ±13)</text>
   <rect x="900" y="340" width="220" height="60" class="box"/>
   <rect x="1000" y="342" width="20" height="56" fill="#c9a267" stroke="#111" stroke-width="1.5"/>
   <path d="M880 370 L1000 370 M1020 370 L1160 370" class="l" stroke-width="4"/>
   <rect x="1130" y="355" width="24" height="30" fill="#1a56b0" stroke="#111"/>
-  <text x="905" y="596" class="g">378 mm² ⇒ 1130 N a 30 bar</text>
+  <text x="905" y="596" class="g">603 mm² ⇒ 1206 N a 20 bar, 1508 N a 25 bar</text>
   <text x="905" y="610" class="g">sin energía: A y B a T ⇒ pistón libre</text>
   <text x="905" y="626" class="g" fill="#1a56b0">Sensor de posición (Hall / potenciómetro):</text>
   <text x="905" y="640" class="g" fill="#1a56b0">lazo cerrado + supervisión de neutro</text>
@@ -164,7 +164,7 @@
   <rect x="20" y="722" width="1140" height="84" rx="6" fill="#f4f4f4" stroke="#bbb"/>
   <text x="32" y="740" class="g" font-weight="bold">Lógica de estados</text>
   <text x="32" y="756" class="g">• Radio apagada / paro de emergencia: dump ABIERTA (sin energía) y V_A, V_B sin corriente ⇒ pistones a tanque, sin contrapresión ⇒ palancas manuales normales.</text>
-  <text x="32" y="771" class="g">• Radio activa: dump CERRADA ⇒ contrapresión 25–30 bar ⇒ pilotaje disponible; joystick ⇒ corriente en V_A o V_B ⇒ presión ∝ corriente ⇒ empuje contra el resorte del carrete.</text>
+  <text x="32" y="771" class="g">• Radio activa: dump CERRADA ⇒ contrapresión 20–25 bar ⇒ pilotaje disponible; joystick ⇒ corriente en V_A o V_B ⇒ presión ∝ corriente ⇒ empuje contra el resorte del carrete.</text>
   <text x="32" y="786" class="g">• Pérdida de enlace / fallo: corte por HARDWARE de la alimentación de dump y bobinas (independiente del microcontrolador) ⇒ retorno a neutro por el resorte del distribuidor.</text>
-  <text x="32" y="801" class="g">• Costo energético: la contrapresión disipa p·Q con el distribuidor en neutro (30 bar × 60 L/min ≈ 3 kW), sólo con radio activa. Alternativa: minicentral 24 V de pilotaje.</text>
+  <text x="32" y="801" class="g">• Costo energético: la contrapresión disipa p·Q con el distribuidor en neutro (25 bar × 60 L/min ≈ 2,5 kW), sólo con radio activa. Alternativa: minicentral 24 V de pilotaje.</text>
 </svg>

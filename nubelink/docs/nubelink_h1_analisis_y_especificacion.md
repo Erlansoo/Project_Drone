@@ -12,7 +12,7 @@ Fecha: 2026-09-28 · Estado: concepto de ingeniería para banco de pruebas (no v
 2. **Corrección al enfoque anterior:** la válvula correcta **no es una 4/3 direccional ISO 4401 (CETOP)**. Una direccional controla *caudal* y necesitaría un lazo de posición obligatorio. Lo que usan Scanreco, Danfoss (PVE) y Walvoil para mover un carrete es una **válvula reductora-relevadora proporcional de 3 vías (P·A·T)**: la presión de salida es proporcional a la corriente, y el propio resorte del distribuidor convierte esa presión en posición. Sin corriente, la válvula conecta el pistón a tanque: **falla a neutro por diseño**. Eso es lo que tú llamabas "de dos en dos, adelante y atrás".
 3. **El punto que faltaba en el análisis previo: de dónde sale la presión de pilotaje.** Las grúas manuales viejas tienen bomba de engranajes y distribuidor de **centro abierto**: en neutro la línea P está casi a 0 bar, así que no hay con qué empujar los pistones. Scanreco lo resuelve con un **"bloque de contrapresión"** (una retención tarada en la línea principal que crea 25–30 bar) más una reductora y un filtro. Esto define el kit tanto como el bloque de pistones.
 4. **Modo manual:** funciona porque, sin energía, ambas cámaras del pistón quedan a tanque y la válvula de descarga (dump) elimina la contrapresión. El operador mueve la palanca arrastrando un pistón libre. Ese es el requisito de diseño n.º 1 del H1 (fricción de sellos baja).
-5. **Fabricación:** cuerpo cilíndrico Ø60 × 100 mm en acero C45, camisa Ø25 bruñida, tapas roscadas, vástago pasante Ø12 cromado, puertos G1/4. Todo torno + taladro. Galerías cruzadas y tapones aparecen recién en la versión modular (H2), y ahí se cierran con **tapones roscados con sello** o **tapones expansores**, nunca con soldadura ni pernos comunes. A 30 bar el bloque modular puede ser de aluminio.
+5. **Fabricación:** cuerpo cilíndrico Ø70 × 110 mm en acero C45, camisa Ø32 bruñida, tapas roscadas, vástago pasante Ø16 cromado, puertos G1/4 → **1 206 N a 20 bar / 1 508 N a 25 bar (paridad con el MOD10: 1 300 N)**. Todo torno + taladro. El bloque de válvulas (2 cavidades FC08-3 por función, galerías P/T, salidas A/B) sí es trabajo para la CNC 6090 en aluminio. Galerías cruzadas se cierran con **tapones roscados con sello** o **tapones expansores**, nunca con soldadura ni pernos comunes.
 6. **Seguridad:** la cadena de parada (paro de emergencia, pérdida de enlace) debe cortar por **hardware** la válvula de descarga y las bobinas, independiente del microcontrolador. La práctica del sector para radiocontroles de grúa es **PL d / Categoría 3 (ISO 13849-1)** para la función de parada, y EN 12999 es la norma de referencia de la grúa.
 7. **Dinero:** el kit Scanreco RC400 + MOD10 de 4 funciones se vende en ~USD 6 300 (incluye la radio). Tu versión, usando tu propia radio, tiene un costo hidráulico estimado de USD 2 000–3 500 por grúa de 4 funciones (válvulas importadas + bloque local). El margen será menor que el 5× de tu negocio actual, pero abre el mercado de grúas manuales que hoy no puedes atender y el mismo bloque sirve para otras máquinas (perforadoras, forestales, agrícolas).
 
@@ -104,6 +104,42 @@ Esquema completo de un módulo con su alimentación: [`esquema_hidraulico_h1.svg
 
 Camino alternativo más corto para algunas grúas: si el distribuidor es Walvoil SD, Hydrocontrol HC-D, Nordhydraulic o Danfoss PVG y el fabricante ofrece **tapas de pilotaje hidráulico** de fábrica, no hacen falta pistones ni horquillas: se cambian las tapas del carrete y se conecta el mismo bloque de válvulas proporcionales (es lo que hace Scanreco con HCD-SD). Vale la pena identificar qué distribuidores tienen tus clientes.
 
+
+## 4A. Diseño del sistema completo (de la manguera de la grúa al pistón)
+
+Lo que sigue es la cadena hidráulica tal como iría instalada, con tamaños de puerto para que adaptes las mangueras.
+
+![Bloque de válvulas H1](../cad/out/nubelink_h1_bloque_valvulas_iso.svg)
+
+| # | Elemento | Especificación | Puertos | Se fabrica / se compra |
+|---|---|---|---|---|
+| 1 | **Entrada desde la bomba** | Línea P de la grúa. Grúas de 12–20 tm: Palfinger PK 15500 → 300 bar máx., 40 L/min (60 con radio + LS); Hiab V91 = centro cerrado LS, V80 = centro abierto. Diseñar todo lo que ve esta línea a **350 bar** y **100 L/min** | Manguera ½" o ¾" de la grúa → racor adaptador → **G3/4** del bloque | Compras racor; tú adaptas |
+| 2 | **Bloque de alimentación** (acero) | Cuerpo con 4 cavidades: (a) alivio pilotado **venteable** tarado 20–25 bar en la línea P (contrapresión), (b) electroválvula 2/2 **normalmente abierta** 24 V en el venteo de (a), (c) reductora fija 3 vías 350 → 25 bar sobre la toma de pilotaje, (d) alivio 35–40 bar sobre la galería piloto. Filtro de presión 10 µm externo en línea | P_IN **G3/4**, P_OUT **G3/4** (al distribuidor), PIL **G1/4**, T_PIL **G1/4**, manómetro G1/4 | Cartuchos: comprar. Cuerpo: comprar manifold estándar o mecanizar en acero (cavidades con herramienta de forma) |
+| 3 | **Lógica de la contrapresión** | Sin corriente el venteo está abierto → el alivio abre a 2–4 bar → sin contrapresión, sin calor, pistones libres (**modo manual**). Con corriente el venteo se cierra → 20–25 bar en P mientras el distribuidor esté en neutro → pilotaje disponible. Una válvula SAE-08 gobierna así todo el caudal de la bomba; el "apagado retardado" del MOD10 se hace en tu receptor (mantener 0,5 s la señal antes de soltar) | — | — |
+| 4 | **Líneas piloto** | Mangueras ¼" 2 alambres, P_pil y T_pil, del bloque de alimentación al bloque de válvulas. T_pil va al tanque por línea propia, **no** al retorno del distribuidor | G1/4 | Compras |
+| 5 | **Bloque de válvulas** (por función) | Aluminio 6082-T6 / 7075-T6, 100 × 60 × 45 mm, **2 cavidades FC08-3** (HYDAC PDR08-01), galería P (anillo 2) y galería T (anillo 3) pasantes por ambas cavidades entrando por las caras extremas como puertos → **sin tapones**; salidas A y B desde la nariz (puerto 1) a la cara frontal; 4 × Ø9 de fijación. Modelo: `cad/nubelink_h1_bloque_valvulas.py` | P, T, A, B: **G1/4** | **Tú lo fabricas** (CNC 6090). Cavidad FC08-3 según plano oficial HYDAC con herramienta de forma; o, para el H1, 2 cuerpos HYDAC **FH083-AB3** (aluminio, G3/8, 210 bar, ref. 3011427) |
+| 6 | **Válvulas** | 2 × **HYDAC PDR08-01-C-N-30-24PG** (0–20 bar) por función; alternativa código 50 (0–35 bar). 12 L/min, 350 bar de entrada, accionamiento directo, cavidad FC08-3 | — | Compras |
+| 7 | **Servopistón** | Ø32 / Ø16, ±20 mm, 1 206 N a 20 bar (§5) | A, B: **G1/4** | **Tú lo fabricas** (torno) |
+| 8 | **Acople** | Horquilla M12 con perno Ø10 + abrazadera partida sobre la varilla de doble mando; tuercas tope para ±13 / ±20 mm | — | Tú (6090 / torno) |
+| 9 | **Sensor** (fase 2) | Hall lineal o potenciómetro 0–50 mm en el extremo libre del vástago | — | Compras |
+
+**¿Hace falta la contrapresión en tu grúa?** Depende del distribuidor; hay que **medir la presión en P con las palancas en neutro y el motor en marcha**:
+
+| Distribuidor | Presión en P en neutro | Alimentación piloto |
+|---|---|---|
+| Hiab **V80**, Walvoil, Hydrocontrol (centro abierto, bomba fija) | ≈ 0–10 bar | Contrapresión obligatoria (elementos 2–3) |
+| Hiab **V91** (centro cerrado, *load sensing*) | *standby* LS, típico 20–30 bar (verificar) | Probablemente toma directa con reductora, sin contrapresión |
+| Danfoss **PVG 32** (Palfinger PK, Fassi, HMF…), bomba fija con PVP centro abierto | *standby* ≈ 10–15 bar (es la presión con la que trabajan sus PVE) | Con Ø32/Ø16 dan 600–900 N: puede bastar; si no, contrapresión |
+
+Si en tu primera grúa mides ≥ 20 bar en neutro, el bloque de alimentación se reduce a reductora + filtro + alivio + una 2/2 de corte (mucho más barato).
+
+### Bloque de válvulas: qué fabricas y qué no
+
+* **El cartucho PDR08-01 no se fabrica**: carrete y camisa lapeados a micras, resorte calibrado, tubo y bobina emparejados. Cualquier intento casero da histéresis y fugas que arruinan la proporcionalidad.
+* **El bloque con las cavidades sí**: es aluminio, 30 bar, y las cavidades FC08-3 se hacen con una herramienta de forma (la vende HYDAC/HydraForce o cualquier fabricante de herramientas de cavidades) en una fresadora rígida. La 6090 puede hacer el bloque, las galerías y los puertos; para las cavidades, prueba en una pieza de sacrificio y mide los diámetros de sellado (tolerancia del orden de ±0,02 mm). Si no llegas, manda sólo la operación de cavidad a un taller.
+* **Bobinas**: la PDR08-01 usa bobina HYDAC tipo 24PG; si tus solenoides son de otra marca no son intercambiables (diámetro y largo del tubo). En el pedido, cotiza cartucho + bobina + conector.
+* Una vez validado el H1, el bloque de 2 cavidades se replica **por sección** en el H2 (paso de sección = paso de varillas; PVG 32 = 48 mm por módulo) y se le añaden las galerías P/T pasantes con O-ring entre secciones.
+
 ---
 
 ## 5. Especificación del prototipo H1 (1 función, banco de pruebas)
@@ -119,39 +155,40 @@ Modelo 3D paramétrico: [`../cad/nubelink_h1.py`](../cad/nubelink_h1.py) · STEP
 | Parámetro | Valor H1 | Nota |
 |---|---|---|
 | Tipo | Cilindro de doble efecto, **vástago pasante** (áreas iguales en ambos sentidos) | Un extremo lleva la horquilla; el otro, el porta-imán del sensor y las tuercas tope |
-| Camisa | **Ø25 H8** (25,000–25,033), bruñida Ra 0,2–0,4 µm | Tu hidráulico bruñe cilindros; es trabajo rutinario |
-| Vástago | **Ø12 f7**, cromado duro (barra de vástago comercial) o inox AISI 431 pulido | Extremos roscados M10 |
-| Área útil | **378 mm²** | π/4·(25² − 12²) |
-| Presión de trabajo / ensayo | 30 bar / **60 bar** | Alivio del bloque a 40 bar |
-| Empuje | 378 N @ 10 bar · **756 N @ 20 bar** · 1 133 N @ 30 bar | Misma clase que el MOD10 (1 300 N) |
-| Carrera | **±20 mm** mecánica; **tuercas tope** ajustables para ±13 mm u otra | Cámara interior 72 mm; el pistón de 16 mm nunca tapa los puertos |
-| Volumen por media carrera | 7,6 cm³ | Caudal para llenar en 0,3 s: 1,5 L/min por función |
-| Cuerpo | Barra redonda **Ø60 × 100 mm, acero C45 (SAE 1045)** | Aluminio 7075-T6 posible (0,65 kg vs 1,83 kg); para H1 prefiero acero por roscas y desgaste de camisa |
-| Tapas (×2, iguales) | Roscadas **M48×1,5**, espiga 14 mm con O-ring 44×3, brida Ø60 × 8 mm, 2 agujeros Ø6 para llave de espigas | Alternativa CNC: tapa atornillada con 4×M8 |
-| Sellos | Pistón: **aro PTFE (glyd ring) + O-ring energizante** (baja fricción); vástago: sello PU 12×20×5,5 + guardapolvo 12×18×5 en cada tapa | Alojamientos según catálogo del sello elegido (Hallite, Trelleborg, Parker, o equivalente disponible) |
-| Puertos | **2 × G1/4** (A y B) sobre caras planas Ø24 fresadas, taladro de paso Ø7 a la cámara | Posición axial ±32 mm desde el centro |
-| Montaje | Cara plana inferior 90 × 32 mm con **4 × M8** (70 × 20 mm) | O abrazaderas partidas sobre el Ø60 (hechas en la 6090) |
-| Horquilla | Clevis 30 × 16 × 20 mm, ranura 8 mm, perno Ø8, roscada M10 al vástago | Se adapta a cada varilla de grúa |
-| Sensor | Imán en disco Ø20 en el extremo trasero + sensor Hall lineal fijo al cuerpo; o potenciómetro lineal 0–50 mm | Salida 0–5 V / 0,5–4,5 V al receptor |
-| Masa estimada | ≈ 2,3 kg con vástago y horquilla (acero) | |
+| Camisa | **Ø32 H8** (32,000–32,039), bruñida Ra 0,2–0,4 µm | Tu hidráulico bruñe cilindros; es trabajo rutinario. Tubo bruñido Ø32 también es medida estándar |
+| Vástago | **Ø16 f7**, cromado duro (barra de vástago comercial) o inox AISI 431 pulido | Extremos roscados M12 |
+| Área útil | **603 mm²** | π/4·(32² − 16²) |
+| Presión de trabajo / ensayo | 20–25 bar de pilotaje (máx. 30) / **60 bar** de ensayo | Alivio del bloque a 35–40 bar |
+| Empuje | 603 N @ 10 bar · **1 206 N @ 20 bar** · 1 508 N @ 25 bar · 1 810 N @ 30 bar | Paridad con el MOD10 (1 300 N) a sólo 21,6 bar |
+| Carrera | **±20 mm** mecánica (igual al MOD10 largo); **tuercas tope** ajustables para ±13 mm (MOD10 corto) u otra | Cámara interior 82 mm; el pistón de 20 mm nunca tapa los puertos |
+| Volumen por media carrera | 12,1 cm³ | Caudal para llenar en 0,3 s: 2,4 L/min por función (PDR08-01 admite 12 L/min) |
+| Cuerpo | Barra redonda **Ø70 × 110 mm, acero C45 (SAE 1045)** | Aluminio 7075-T6 posible (0,94 kg vs 2,63 kg); para H1 prefiero acero por roscas y desgaste de camisa |
+| Tapas (×2, iguales) | Roscadas **M56×1,5**, espiga 14 mm con O-ring 52×3, brida Ø70 × 8 mm, 2 agujeros Ø6 para llave de espigas | Alternativa CNC: tapa atornillada con 4×M8 |
+| Sellos | Pistón: **aro PTFE (glyd ring) Ø32 + O-ring energizante** (baja fricción); vástago: sello PU 16×24×5,5 + guardapolvo 16×22×5 en cada tapa | Alojamientos según catálogo del sello elegido (Hallite, Trelleborg, Parker, o equivalente disponible) |
+| Puertos | **2 × G1/4** (A y B) sobre caras planas 26 × 26 mm fresadas, taladro de paso Ø7 a la cámara | Posición axial ±35,5 mm desde el centro |
+| Montaje | Cara plana inferior 100 × 36 mm con **4 × M8** (80 × 24 mm) | O abrazaderas partidas sobre el Ø70 (hechas en la 6090) |
+| Horquilla | Clevis 34 × 20 × 24 mm, ranura 10 mm, perno Ø10, roscada M12 al vástago | Se adapta a cada varilla de grúa; MOD10 usa el mismo esquema horquilla + abrazadera en la varilla |
+| Sensor | Imán en disco Ø24 en el extremo trasero + sensor Hall lineal fijo al cuerpo; o potenciómetro lineal 0–50 mm | Salida 0–5 V / 0,5–4,5 V al receptor |
+| Masa estimada | ≈ 3,3 kg con vástago y horquilla (acero); ≈ 1,6 kg en aluminio | |
 
 ### 5.2 Tolerancias y acabados críticos
 
 * Concentricidad camisa – alojamiento de tapa – paso de vástago: ≤ 0,05 mm (mecanizar camisa y roscas de tapa en la misma sujeción).
-* Camisa Ø25 H8, sin rayas axiales; entrada con chaflán 15° para no dañar el aro PTFE.
-* Vástago Ø12 f7, Ra ≤ 0,2 µm, chaflanes en extremos y roscas.
+* Camisa Ø32 H8, sin rayas axiales; entrada con chaflán 15° para no dañar el aro PTFE.
+* Vástago Ø16 f7, Ra ≤ 0,2 µm, chaflanes en extremos y roscas.
 * Caras de puertos: planas, Ra ≤ 3,2, perpendiculares al taladro (ISO 1179-1 para G1/4 con junta).
 * Limpieza interior: desbarbar todos los cruces, lavar, soplar; tapar puertos hasta el montaje.
 
-### 5.3 Fuerza necesaria vs. distribuidor (a confirmar con medición)
+### 5.3 Fuerza necesaria vs. distribuidor (a confirmar con medición; ejemplo con 250 N de resorte + 50 N de fricción, margen ×1,3)
 
-| Camisa / vástago | Área (mm²) | p mínima para 200 N + 40 N fricción | p con margen ×1,3 | Uso del rango 0–20 bar | Uso del rango 0–35 bar |
+| Camisa / vástago | Área (mm²) | p mínima para 250 N + 50 N | p con margen ×1,3 | Uso del rango 0–20 bar | Uso del rango 0–35 bar |
 |---|---|---|---|---|---|
-| Ø20 / Ø10 | 236 | 10,2 bar | 13,2 bar | 66 % | 38 % |
-| **Ø25 / Ø12** | 378 | 6,4 bar | 8,3 bar | 41 % | 24 % |
-| Ø32 / Ø16 | 603 | 4,0 bar | 5,2 bar | 26 % | 15 % |
+| Ø20 / Ø10 | 236 | 12.7 bar | 16.6 bar | 83 % | 47 % |
+| Ø25 / Ø12 | 378 | 7.9 bar | 10.3 bar | 52 % | 29 % |
+| Ø28 / Ø14 | 462 | 6.5 bar | 8.4 bar | 42 % | 24 % |
+| **Ø32 / Ø16** | 603 | 5.0 bar | 6.5 bar | 32 % | 18 % |
 
-Regla: elegir área y rango de válvula de modo que la **carrera completa se alcance usando el 60–80 % del rango de presión de la válvula** (buena resolución, sin saturar). Con Ø25/Ø12 y un distribuidor de 200 N, la válvula de **0–20 bar** queda bien; si el resorte resulta más fuerte (algunos distribuidores grandes llegan a 300–400 N en la varilla), se pasa a la de 0–35 bar sin cambiar el bloque. Por eso el 3D deja el área como parámetro.
+Regla: elegir área y rango de válvula de modo que la **carrera completa se alcance usando el 30–80 % del rango de presión de la válvula** (resolución sin saturar). Con Ø32/Ø16 y la HYDAC de **0–20 bar** (código 30) cubres desde distribuidores livianos (100 N) hasta pesados (600 N a 10 bar) sin cambiar nada; si un distribuidor exigiera más de 1 200 N se pasa al código 50 (0–35 bar). El empuje máximo se limita por software (I_max), no por hardware, así que sobredimensionar el pistón no cuesta precisión.
 
 ---
 
@@ -161,7 +198,7 @@ Requisito: reductora-relevadora proporcional **3 vías**, cartucho, **rango de p
 
 | Válvula | Datos verificados | Comentario |
 |---|---|---|
-| **HYDAC PDR08-01** | 3 vías, **accionamiento directo**, cartucho SAE-08, entrada 350 bar. Rangos por código: **20 = 0–14 bar, 30 = 0–20 bar, 50 = 0–35 bar**, 110 = 0–75, 200 = 0–138. Bobina 24 V (ej. `PDR08-01-C-N-50-24PG`) | **Primera opción**: rango exacto para pilotaje, directo (poca fuga), cavidad SAE-08 3W común, cuerpos en línea disponibles |
+| **HYDAC PDR08-01** | 3 vías, **accionamiento directo**, cartucho SAE-08 (cavidad **FC08-3**), **12 L/min**, entrada 350 bar. Cuerpo en línea de aluminio FH083-AB3 (G3/8, 210 bar, ref. 3011427). Rangos por código: **20 = 0–14 bar, 30 = 0–20 bar, 50 = 0–35 bar**, 110 = 0–75, 200 = 0–138. Bobina 24 V (ej. `PDR08-01-C-N-50-24PG`) | **Primera opción**: rango exacto para pilotaje, directo (poca fuga), cavidad SAE-08 3W común, cuerpos en línea disponibles |
 | **Wandfluh MPPPM22** | Cartucho M22×1,5 (ISO 7789), directo por carrete piloto, P hasta 400 bar, 24 V: corriente límite 680 mA | Suiza, muy buena calidad; verificar rangos bajos en ficha 2.3-641 |
 | **Sun Hydraulics PRDM / PRDF** | Reductora-relevadora electroproporcional de accionamiento directo, consumo piloto ~0,4 L/min, recomiendan amplificador con control de corriente y dither 100–250 Hz | Ojo: PRDM es "presión **baja** al subir la corriente" (inversa); para esta aplicación se necesita la variante "presión sube con corriente". Verificar rango |
 | HydraForce TS10-36 | Rangos **6,9–117 / 159 / 207 bar**, alivia ~6,9 bar sin corriente, 24 V: 0,55 A | **No recomendada**: rango demasiado alto (usarías el 10–15 % de la escala) y 6,9 bar residuales sin corriente |
@@ -183,13 +220,13 @@ Elementos del bloque de alimentación (todos cartuchos estándar): reductora-rel
 | CNC 6090 de 2,2 kW | Para **aluminio**: abrazaderas, soportes, porta-sensores, caras planas de puertos, y más adelante el manifold de cavidades (con herramienta de forma y verificación de tolerancias). **No** para tornear la camisa ni para acero grueso: eso va al torno y al bruñido |
 | Fundición / China | Para el H2 modular en volumen, un bloque de aluminio 6061-T6/7075-T6 mecanizado (los talleres de manifolds chinos lo hacen bien y barato con tus STEP). Fundición no aporta nada a estos volúmenes |
 
-Presión y materiales: el bloque piloto trabaja a ≤ 30 bar. La tensión en el cuerpo Ø60/Ø25 a 30 bar es ≈ 2 MPa (factor de seguridad > 100 en acero; > 90 en aluminio 6061-T6). Incluso si fallara la reductora y llegaran 350 bar, el cuerpo aguanta (FS ≈ 11–20); lo que fallaría serían sellos y roscas de tapa, por eso el alivio de 40 bar es obligatorio. Los manifolds de aluminio 6061-T6 comerciales están certificados a 210 bar continuos / 840 bar de rotura.
+Presión y materiales: el bloque piloto trabaja a ≤ 30 bar. La tensión en el cuerpo Ø70/Ø32 a 30 bar es ≈ 2,5 MPa (factor de seguridad > 100 en acero; > 90 en aluminio 6061-T6). Incluso si fallara la reductora y llegaran 350 bar, el cuerpo aguanta (FS ≈ 10–17); lo que fallaría serían sellos y roscas de tapa, por eso el alivio de 35–40 bar es obligatorio. Los manifolds de aluminio 6061-T6 comerciales están certificados a 210 bar continuos / 840 bar de rotura; el bloque de alimentación, que ve la línea principal, va en acero.
 
 Secuencia sugerida para el H1:
 
 1. Comprar vástago cromado Ø12, sellos, O-rings y 2 válvulas + cuerpos en línea.
 2. Tornear cuerpo (camisa con sobre-medida 0,1–0,15 mm para bruñido), roscas de tapa y caras.
-3. Bruñir camisa a Ø25 H8. Taladrar puertos y montaje. Desbarbar y limpiar.
+3. Bruñir camisa a Ø32 H8. Taladrar puertos y montaje. Desbarbar y limpiar.
 4. Tornear tapas y pistón según el sello comprado (medidas de alojamiento del catálogo).
 5. Montar, probar a 60 bar en banco, medir fricción.
 
@@ -248,7 +285,7 @@ Sólo con T1–T8 aprobados se pasa a instalar el módulo en una grúa real, pri
 
 ---
 
-## 11. Lo que necesito de tu hidráulico (mediciones de la grúa a convertir)
+## 11. Lo que necesito de tu hidráulico (mediciones de la grúa a convertir) y lo que ya se sabe
 
 1. Marca y modelo del distribuidor (foto de la placa y de la parte trasera de los carretes). Si es Walvoil/Hydrocontrol/Nordhydraulic/Danfoss, averiguar si existen tapas de pilotaje hidráulico de fábrica.
 2. **Carrera de la varilla** en el punto donde se acoplaría la horquilla, en ambos sentidos (mm).
@@ -260,6 +297,19 @@ Sólo con T1–T8 aprobados se pasa a instalar el módulo en una grúa real, pri
 8. Presión máxima admisible en el retorno del distribuidor (para no ubicar la contrapresión en T).
 
 Con 2, 3 y 5 fijo el área del pistón, el rango de válvula y el paso del H2.
+
+Lo que ya está documentado (y lo que no):
+
+| Dato | Valor | Fuente / estado |
+|---|---|---|
+| Danfoss PVG 32: ancho de módulo básico (paso de varillas) | **48 mm** | Ficha PVG 32 (verificar en la grúa) |
+| Danfoss PVG 32: carrera del carrete | **±7 mm** (opcional ±5,5) | Ficha PVG 32. La relación de palanca de la varilla decide la carrera en la horquilla (13 o 20 mm) |
+| Danfoss PVG 32: pilotaje de sus actuadores PVE | 10–15 bar | Ficha PVE. Confirma que 20–25 bar de pilotaje sobran para mover cualquier carrete de esta clase |
+| Palfinger PK 15500: presión / caudal | 300 bar máx.; 40 L/min (60 con radio + LS) | Ficha Palfinger |
+| Hiab XS 122/144/166: distribuidor | V91 (centro cerrado, LS) en HiDuo/HiPro; V80 (centro abierto) en versiones básicas | Documentación Hiab. Presión de trabajo: verificar en placa/manual (clase 280–320 bar) |
+| Hiab V91: paso entre secciones, carrera y fuerza de carrete | **no publicado** | Medir en la grúa |
+| Scanreco MOD10: paso entre pistones | 3 opciones, valores no publicados | El H2 se diseña con paso parametrizable; el H1 no lo necesita |
+| Fuerza en la varilla (todos) | **no publicada por ningún fabricante** | Medir con dinamómetro (motor en marcha). Con Ø32/Ø16 hay margen hasta 1 200 N a 20 bar |
 
 ---
 

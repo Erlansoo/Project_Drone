@@ -37,10 +37,10 @@ def caudal_lmin(volumen_cm3: float, t_s: float) -> float:
 
 
 def tabla_pistones(opciones, presiones, carrera_medio=20.0, t_llenado=0.3):
-    print("### Fuerza y caudal por opción de pistón (vástago pasante)\n")
+    print("### Fuerza y caudal por opción de pistón (vástago pasante) — referencia Scanreco MOD10: 1 300 N a 30 bar\n")
     cab = "| Camisa Ø / vástago Ø | Área útil (mm²) |"
     cab += "".join(f" F @ {p:g} bar (N) |" for p in presiones)
-    cab += f" Vol. neutro→tope {carrera_medio:g} mm (cm³) | Caudal para {t_llenado:g} s (L/min) |"
+    cab += f" p para 1300 N (bar) | Vol. neutro→tope {carrera_medio:g} mm (cm³) | Caudal para {t_llenado:g} s (L/min) |"
     print(cab)
     print("|" + "---|" * (cab.count("|") - 1))
     for D, d in opciones:
@@ -49,7 +49,7 @@ def tabla_pistones(opciones, presiones, carrera_medio=20.0, t_llenado=0.3):
         Q = caudal_lmin(V, t_llenado)
         fila = f"| Ø{D:g} / Ø{d:g} | {A:.0f} |"
         fila += "".join(f" {fuerza_N(A, p):.0f} |" for p in presiones)
-        fila += f" {V:.1f} | {Q:.2f} |"
+        fila += f" {1300.0 / (A * 1e-6) / BAR:.1f} | {V:.1f} | {Q:.2f} |"
         print(fila)
     print()
 
@@ -109,7 +109,7 @@ def main():
     ap.add_argument("--friccion", type=float, default=40.0, help="Fricción estimada de sellos del servopistón (N)")
     args = ap.parse_args()
 
-    opciones = [(20, 10), (25, 12), (32, 16)]
+    opciones = [(20, 10), (25, 12), (28, 14), (32, 16)]
     presiones = [10, 20, 30]
 
     print("# Dimensionado preliminar Nubelink H1\n")
@@ -117,7 +117,7 @@ def main():
     tabla_presion_requerida(opciones, args.fuerza, args.friccion)
     tabla_calor([20, 25, 30], [30, 45, 60, 80])
     verificacion_cuerpo(
-        60, 25, [30, 40, 100, 350],
+        70, 32, [30, 40, 100, 350],
         {"C45 (σy≈350 MPa)": 350, "6061-T6 (σy≈275 MPa)": 275, "7075-T6 (σy≈500 MPa)": 500},
     )
     print("Nota: la presión de 350 bar sólo se indica como caso de falla (reductora averiada). "
