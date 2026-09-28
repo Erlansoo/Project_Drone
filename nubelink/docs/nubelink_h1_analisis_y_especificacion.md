@@ -192,6 +192,43 @@ Modelo 3D paramétrico: [`../cad/nubelink_h1.py`](../cad/nubelink_h1.py) · STEP
 
 Regla: elegir área y rango de válvula de modo que la **carrera completa se alcance usando el 30–80 % del rango de presión de la válvula** (resolución sin saturar). Con Ø32/Ø16 y la HYDAC de **0–20 bar** (código 30) cubres desde distribuidores livianos (100 N) hasta pesados (600 N a 10 bar) sin cambiar nada; si un distribuidor exigiera más de 1 200 N se pasa al código 50 (0–35 bar). El empuje máximo se limita por software (I_max), no por hardware, así que sobredimensionar el pistón no cuesta precisión.
 
+
+## 5B. H1‑B "comando" integrado para lazo abierto (versión a fabricar primero)
+
+Decisiones fijadas contigo: **control por corriente, proporcional, con resorte de centrado, 24 V de alimentación, lazo abierto (sin sensor) por ahora, un solo bloque de prueba, la electrónica la haces tú.** Con eso el estudio paramétrico (`sim/estudio_lazo_abierto.py`) cambia el dimensionado respecto al H1 de lazo cerrado:
+
+| Parámetro | H1 (lazo cerrado) | **H1‑B (lazo abierto)** | Por qué |
+|---|---|---|---|
+| Pistón | Ø32 / Ø16 (603 mm²) | **Ø20 / Ø10 (236 mm²)** → 472 N a 20 bar | Con pistón grande, la histéresis de la válvula (en corriente) se convierte en mucha fuerza y mucha histéresis en posición; con 236 mm² la carrera usa una banda de corriente ancha (0,30–0,85 A) |
+| Resorte propio | 50 N + 2,5 N/mm | **40 N + 6 N/mm** (160 N a fin de carrera) | El resorte propio rígido "domina" al del distribuidor y linealiza presión → posición |
+| Sellos | PU | **PTFE (glyd ring en pistón, sello PTFE en vástago)**, fricción objetivo < 25 N | La fricción es la primera causa de histéresis en lazo abierto |
+| Válvula | 0–20 bar | **0–20 bar (PDR08‑01 código 30)** | Con 0–14 bar no se llega a fin de carrera en distribuidores de resorte fuerte |
+| Construcción | Cuerpo torneado + bloque de válvulas aparte | **Un solo bloque 110 × 60 × 90** con camisa, 2 cavidades, galerías y salidas internas | Es "el comando": una pieza a mecanizar, sin mangueras internas |
+| Resultado esperado (modelo) | ±0,5 mm | Histéresis **7 % de la carrera** con distribuidor de resorte fuerte, **17 %** con resorte débil; banda de corriente 0,30 → 0,56–0,85 A | Suficiente para operar (el operador cierra el lazo con la vista); el sensor se puede añadir después sin cambiar el bloque |
+| Fuerza manual extra | ≈ 35 N en la empuñadura | **≈ 60 N en la empuñadura** a fin de carrera moviendo rápido (178 N en la horquilla) | Precio del resorte rígido; con 8 N/mm baja la histéresis a 11 % pero sube a 73 N |
+
+Modelo 3D: `cad/nubelink_h1b_comando.py` → `cad/out/nubelink_h1b_comando_*.step`. Hoja de fabricación con cotas, tolerancias, piezas secundarias, dónde fabricar y check‑list: [`hoja_fabricacion_h1b.md`](hoja_fabricacion_h1b.md).
+
+![H1-B corte](../cad/out/nubelink_h1b_comando_corte.svg)
+
+### Interfaz eléctrica que debe cumplir tu electrónica (lazo abierto)
+
+| Parámetro | Valor | Nota |
+|---|---|---|
+| Alimentación | 24 V nominal (20–30 V del camión) | El driver regula corriente, no tensión |
+| Salidas | 2 por función (V_A, V_B), **control en corriente** con sensado (shunt) y lazo PI de corriente ≤ 5 ms | Nunca energizar V_A y V_B a la vez |
+| I_min (arranque) | **≈ 0,28 A** (ajustable 0,2–0,4) | Salto al primer 1–2 % de joystick: vence zona muerta de la válvula + precarga de los resortes (modelo: 0,30–0,35 A) |
+| I_max | **≈ 0,90 A** (ajustable hasta el máximo de la bobina) | Confirmar con la ficha de la bobina 24PG; el modelo llega a fin de carrera a 0,56–0,85 A según el distribuidor |
+| Curva | Lineal I = I_min + PWM·(I_max − I_min), con curva progresiva opcional | El operador ajusta I_min/I_max por función en la instalación |
+| PWM de potencia | 100–200 Hz (o la que indique HYDAC) | — |
+| Dither | 100–150 Hz, ±3–5 % de I_max, ajustable | Reduce la histéresis propia de la válvula |
+| Rampas | Subida 0,2–0,5 s, bajada 0,1–0,3 s | — |
+| Secuencia de activación | 1) cerrar venteo (contrapresión) → esperar 0,3 s → 2) habilitar corrientes | — |
+| Secuencia de paro / soltar | 1) corrientes a 0 con rampa (el resorte propio lleva el pistón a neutro en ~0,3 s) → 2) abrir venteo 0,5 s después | Paro de emergencia y pérdida de enlace: igual pero rampa instantánea; corte por hardware de la alimentación de bobinas y venteo |
+| Diagnóstico mínimo | Corriente real vs consigna (bobina abierta / en corto), tensión de batería | — |
+
+Con el sensor añadido más adelante, el mismo bloque pasa a lazo cerrado (H1) sin cambios mecánicos: sólo cambia el firmware.
+
 ---
 
 ## 6. Válvulas proporcionales comerciales candidatas

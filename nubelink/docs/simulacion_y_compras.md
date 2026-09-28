@@ -151,6 +151,37 @@ Validación: el modelo Simscape debe reproducir los ensayos T2 (fricción), T3 (
 
 ---
 
+### 4.2b Estudio paramétrico para lazo abierto (`sim/estudio_lazo_abierto.py`)
+
+Como la primera versión será en lazo abierto (corriente ∝ PWM, sin sensor), se buscó la combinación pistón / resorte propio / sellos que minimiza la histéresis manteniendo una fuerza manual aceptable, para dos distribuidores extremos:
+
+Rampa de PWM 0 → 100 % → 0 en 8 s; corriente = I0 + PWM·(I_max − I0); válvula 0–20 bar; pilotaje 25 bar; fricción escalada con el perímetro de sellado (referencia Ø32/Ø16).
+
+| Pistón | Resorte propio | Sellos | Fricción (N) | Distribuidor débil: hist. / I_ini → I_fin | Distribuidor fuerte: hist. / I_ini → I_fin | F extra manual a tope (N) |
+|---|---|---|---|---|---|---|
+| Ø20/Ø10 | 2,5 N/mm | PTFE 20 N | 12 | 38 % / 0.31 → 0.46 A | 10 % / 0.36 → 0.75 A | 118 |
+| Ø20/Ø10 | 2,5 N/mm | PU 40 N | 25 | 47 % / 0.33 → 0.49 A | 16 % / 0.38 → 0.77 A | 131 |
+| Ø20/Ø10 | 4 N/mm | PTFE 20 N | 12 | 26 % / 0.31 → 0.51 A | 9 % / 0.36 → 0.80 A | 148 |
+| Ø20/Ø10 | 4 N/mm | PU 40 N | 25 | 38 % / 0.33 → 0.53 A | 14 % / 0.38 → 0.82 A | 161 |
+| Ø20/Ø10 | 6 N/mm | PTFE 20 N | 12 | 17 % / 0.30 → 0.56 A | 7 % / 0.35 → 0.85 A | 178 |
+| Ø20/Ø10 | 6 N/mm | PU 40 N | 25 | 26 % / 0.31 → 0.58 A | 12 % / 0.36 → 0.88 A | 191 |
+| Ø25/Ø12 | 2,5 N/mm | PTFE 20 N | 15 | 46 % / 0.25 → 0.36 A | 16 % / 0.28 → 0.52 A | 130 |
+| Ø25/Ø12 | 2,5 N/mm | PU 40 N | 31 | 48 % / 0.26 → 0.38 A | 23 % / 0.29 → 0.54 A | 145 |
+| Ø25/Ø12 | 4 N/mm | PTFE 20 N | 15 | 38 % / 0.25 → 0.38 A | 13 % / 0.28 → 0.56 A | 160 |
+| Ø25/Ø12 | 4 N/mm | PU 40 N | 31 | 46 % / 0.26 → 0.40 A | 19 % / 0.29 → 0.58 A | 175 |
+| Ø25/Ø12 | 6 N/mm | PTFE 20 N | 15 | 26 % / 0.24 → 0.41 A | 11 % / 0.27 → 0.59 A | 190 |
+| Ø25/Ø12 | 6 N/mm | PU 40 N | 31 | 36 % / 0.25 → 0.43 A | 16 % / 0.28 → 0.61 A | 205 |
+| Ø32/Ø16 | 2,5 N/mm | PTFE 20 N | 20 | 49 % / 0.21 → 0.31 A | 28 % / 0.23 → 0.39 A | 156 |
+| Ø32/Ø16 | 2,5 N/mm | PU 40 N | 40 | 49 % / 0.22 → 0.32 A | 36 % / 0.24 → 0.41 A | 176 |
+| Ø32/Ø16 | 4 N/mm | PTFE 20 N | 20 | 46 % / 0.21 → 0.32 A | 23 % / 0.23 → 0.41 A | 186 |
+| Ø32/Ø16 | 4 N/mm | PU 40 N | 40 | 49 % / 0.22 → 0.33 A | 31 % / 0.24 → 0.43 A | 206 |
+| Ø32/Ø16 | 6 N/mm | PTFE 20 N | 20 | 40 % / 0.20 → 0.33 A | 19 % / 0.22 → 0.43 A | 216 |
+| Ø32/Ø16 | 6 N/mm | PU 40 N | 40 | 46 % / 0.22 → 0.34 A | 26 % / 0.24 → 0.45 A | 236 |
+
+Segunda pasada (válvula 0–14 vs 0–20 bar, resorte 6 vs 8 N/mm, histéresis propia de la válvula 2 vs 4 %): con 0–14 bar el distribuidor fuerte no llega a fin de carrera; 8 N/mm baja la histéresis a 10–12 % pero sube la fuerza manual a ~220 N en la horquilla; la histéresis propia de la válvula influye poco (±2 %).
+
+**Elección H1‑B: Ø20/Ø10 · resorte 40 N + 6 N/mm · sellos PTFE · PDR08‑01 0–20 bar** → histéresis 7 % (distribuidor fuerte) / 17 % (débil), banda de corriente 0,30–0,85 A, fuerza manual extra ≈ 178 N en la horquilla (≈ 60 N en la empuñadura).
+
 ### 4.3 Cadena de señal: del PWM del joystick al recorrido del pistón
 
 Hay **dos PWM distintos** y conviene no mezclarlos:
@@ -208,6 +239,8 @@ El FEA en SolidWorks se hace igualmente **una vez**, para el bloque de alimentac
 | Filtro de presión 10 µm, 350 bar, ¼" | HYDAC / Parker inline | *high pressure inline hydraulic filter 10 micron 1/4 BSP* | β ≥ 75 |
 
 ### 6.2 Bloques (lo que mandas a fabricar con tu STEP + plano)
+
+**Primer bloque de prueba = H1‑B integrado** (`cad/out/nubelink_h1b_comando_bloque.step`, hoja en [`hoja_fabricacion_h1b.md`](hoja_fabricacion_h1b.md)). Proceso: **CNC en aluminio 6061‑T6** (JLCPCB CNC, PCBWay, Xometry o un taller chino de manifolds). **No SLM / impresión en metal**: porosidad (fugas), rugosidad interna, distorsión, y de todos modos hay que mecanizar camisa, cavidades y caras de sellado; sale más caro y con más riesgo.
 
 | Ítem | Material | Qué enviar al taller | Qué exigir | Costo orientativo |
 |---|---|---|---|---|
